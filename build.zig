@@ -63,6 +63,7 @@ pub fn library(
         }),
         .linkage = .static,
     });
+    lib.linkLibC();
 
     lib.addIncludePath(upstream.path(""));
     lib.installHeader(
