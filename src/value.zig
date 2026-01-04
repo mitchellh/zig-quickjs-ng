@@ -3060,6 +3060,73 @@ fn testSquareFunc(ctx_opt: ?*Context, _: Value, args: []const c.JSValue) Value {
     return Value.initInt32(val * val);
 }
 
+test "getset property accessors" {
+    const rt: *Runtime = try .init();
+    defer rt.deinit();
+
+    const ctx: *Context = try .init(rt);
+    defer ctx.deinit();
+
+    const obj: Value = .initObject(ctx);
+    defer obj.deinit(ctx);
+
+    const list = [_]cfunc.FunctionListEntry{
+        cfunc.FunctionListEntryHelpers.getset("readOnly", &testGetter, null),
+        cfunc.FunctionListEntryHelpers.getset("readWrite", &testGetter, &testSetter),
+        cfunc.FunctionListEntryHelpers.getsetMagic("magicProp", &testGetterMagic, &testSetterMagic, 42),
+    };
+
+    try obj.setPropertyFunctionList(ctx, &list);
+
+    const global = ctx.getGlobalObject();
+    defer global.deinit(ctx);
+    try global.setPropertyStr(ctx, "testObj", obj.dup(ctx));
+
+    // Test read-only getter
+    const result1 = ctx.eval("testObj.readOnly", "<test>", .{});
+    defer result1.deinit(ctx);
+    try testing.expect(!result1.isException());
+    try testing.expectEqual(@as(i32, 123), try result1.toInt32(ctx));
+
+    // Test read-write getter
+    const result2 = ctx.eval("testObj.readWrite", "<test>", .{});
+    defer result2.deinit(ctx);
+    try testing.expect(!result2.isException());
+    try testing.expectEqual(@as(i32, 123), try result2.toInt32(ctx));
+
+    // Test setter returns value
+    const result3 = ctx.eval("testObj.readWrite = 999", "<test>", .{});
+    defer result3.deinit(ctx);
+    try testing.expect(!result3.isException());
+
+    // Test magic getter (returns the magic value)
+    const result4 = ctx.eval("testObj.magicProp", "<test>", .{});
+    defer result4.deinit(ctx);
+    try testing.expect(!result4.isException());
+    try testing.expectEqual(@as(i32, 42), try result4.toInt32(ctx));
+
+    // Test magic setter
+    const result5 = ctx.eval("testObj.magicProp = 100", "<test>", .{});
+    defer result5.deinit(ctx);
+    try testing.expect(!result5.isException());
+}
+
+fn testGetter(_: ?*Context, _: Value) Value {
+    return .initInt32(123);
+}
+
+fn testSetter(_: ?*Context, _: Value, _: Value) Value {
+    return .undefined;
+}
+
+fn testGetterMagic(_: ?*Context, _: Value, magic: c_int) Value {
+    return .initInt32(magic);
+}
+
+fn testSetterMagic(_: ?*Context, _: Value, _: Value, _: c_int) Value {
+    return .undefined;
+}
+
 test "setConstructor" {
     const rt: *Runtime = try .init();
     defer rt.deinit();

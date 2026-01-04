@@ -5,7 +5,8 @@ const quickjs = @import("quickjs");
 ///
 /// Demonstrates:
 /// - Custom class registration with finalizer
-/// - Methods (increment, decrement, reset, getValue)
+/// - Methods (increment, decrement, reset)
+/// - Read-only property (value)
 /// - Constructor with optional initial value
 const Counter = struct {
     value: i32,
@@ -47,7 +48,7 @@ const Counter = struct {
         quickjs.cfunc.FunctionListEntryHelpers.func("increment", 0, increment),
         quickjs.cfunc.FunctionListEntryHelpers.func("decrement", 0, decrement),
         quickjs.cfunc.FunctionListEntryHelpers.func("reset", 0, reset),
-        quickjs.cfunc.FunctionListEntryHelpers.func("getValue", 0, getValue),
+        quickjs.cfunc.FunctionListEntryHelpers.getset("value", getValue, null),
     };
 
     fn finalizer(rt: *quickjs.Runtime, val: quickjs.Value) callconv(.c) void {
@@ -119,11 +120,7 @@ const Counter = struct {
         return .undefined;
     }
 
-    fn getValue(
-        ctx: ?*quickjs.Context,
-        this: quickjs.Value,
-        _: []const quickjs.c.JSValue,
-    ) quickjs.Value {
+    fn getValue(ctx: ?*quickjs.Context, this: quickjs.Value) quickjs.Value {
         const c = ctx.?;
         const counter = this.getOpaque2(c, Counter, class_id) orelse
             return c.throwTypeError("Not a Counter instance");
@@ -145,7 +142,7 @@ pub fn main() !void {
         \\c.increment();
         \\c.increment();
         \\c.decrement();
-        \\`Counter value: ${c.getValue()}`
+        \\`Counter value: ${c.value}`
     , "<example>", .{});
     defer result.deinit(ctx);
 

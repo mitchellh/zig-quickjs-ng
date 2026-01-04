@@ -190,8 +190,10 @@ pub fn wrapClosureFinalizer(comptime T: type, comptime func: ClosureFinalizer(T)
 /// C: getter in `JSCFunctionType`
 pub const Getter = *const fn (?*Context, Value) Value;
 
+const CGetterFn = ?*const fn (?*c.JSContext, c.JSValue) callconv(.c) c.JSValue;
+
 /// Wraps a Zig-friendly Getter into a C-callable function.
-pub fn wrapGetter(comptime func: Getter) c.JSCFunctionType.unnamed_0 {
+pub fn wrapGetter(comptime func: Getter) CGetterFn {
     return struct {
         fn callback(
             ctx: ?*c.JSContext,
@@ -210,8 +212,10 @@ pub fn wrapGetter(comptime func: Getter) c.JSCFunctionType.unnamed_0 {
 /// C: setter in `JSCFunctionType`
 pub const Setter = *const fn (?*Context, Value, Value) Value;
 
+const CSetterFn = ?*const fn (?*c.JSContext, c.JSValue, c.JSValue) callconv(.c) c.JSValue;
+
 /// Wraps a Zig-friendly Setter into a C-callable function.
-pub fn wrapSetter(comptime func: Setter) c.JSCFunctionType.unnamed_1 {
+pub fn wrapSetter(comptime func: Setter) CSetterFn {
     return struct {
         fn callback(
             ctx: ?*c.JSContext,
@@ -232,8 +236,10 @@ pub fn wrapSetter(comptime func: Setter) c.JSCFunctionType.unnamed_1 {
 /// C: getter_magic in `JSCFunctionType`
 pub const GetterMagic = *const fn (?*Context, Value, c_int) Value;
 
+const CGetterMagicFn = ?*const fn (?*c.JSContext, c.JSValue, c_int) callconv(.c) c.JSValue;
+
 /// Wraps a Zig-friendly GetterMagic into a C-callable function.
-pub fn wrapGetterMagic(comptime func: GetterMagic) c.JSCFunctionType.unnamed_2 {
+pub fn wrapGetterMagic(comptime func: GetterMagic) CGetterMagicFn {
     return struct {
         fn callback(
             ctx: ?*c.JSContext,
@@ -254,8 +260,10 @@ pub fn wrapGetterMagic(comptime func: GetterMagic) c.JSCFunctionType.unnamed_2 {
 /// C: setter_magic in `JSCFunctionType`
 pub const SetterMagic = *const fn (?*Context, Value, Value, c_int) Value;
 
+const CSetterMagicFn = ?*const fn (?*c.JSContext, c.JSValue, c.JSValue, c_int) callconv(.c) c.JSValue;
+
 /// Wraps a Zig-friendly SetterMagic into a C-callable function.
-pub fn wrapSetterMagic(comptime func: SetterMagic) c.JSCFunctionType.unnamed_3 {
+pub fn wrapSetterMagic(comptime func: SetterMagic) CSetterMagicFn {
     return struct {
         fn callback(
             ctx: ?*c.JSContext,
