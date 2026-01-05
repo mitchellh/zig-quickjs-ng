@@ -353,15 +353,13 @@ test "Class with finalizer" {
 
     const class_id: Id = .new(rt);
 
-    const finalizer = struct {
-        fn finalize(_: *Runtime, _: Value) callconv(.c) void {
-            State.finalized = true;
-        }
-    }.finalize;
-
     const def = Def{
         .class_name = "FinalizerTest",
-        .finalizer = @ptrCast(&finalizer),
+        .finalizer = &struct {
+            fn finalize(_: ?*c.JSRuntime, _: c.JSValue) callconv(.c) void {
+                State.finalized = true;
+            }
+        }.finalize,
     };
     try rt.newClass(class_id, &def);
 

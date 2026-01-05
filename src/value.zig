@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const assert = std.debug.assert;
 const testing = std.testing;
 const c = @import("quickjs_c");
@@ -20,9 +21,16 @@ const Opaque = opaquepkg.Opaque;
 ///
 /// C: `JSValue`
 pub const Value = extern struct {
-    /// Keep in sync with JSValue in quickjs.h
-    u: c.JSValueUnion,
-    tag: Tag,
+    // If this is true then we are in nan-boxing mode which changes
+    // our Value representation.
+    pub const is_nan_boxed = builtin.target.ptrBitWidth() < 64;
+
+    // Non-nan-boxed layout
+    u: if (!is_nan_boxed) c.JSValueUnion else void = if (!is_nan_boxed) .{ .int32 = 0 } else {},
+    tag: if (!is_nan_boxed) Tag else void = if (!is_nan_boxed) .undefined else {},
+
+    // NaN-boxed layout
+    val: if (is_nan_boxed) u64 else void = if (is_nan_boxed) mkval(.undefined, 0) else {},
 
     /// JavaScript value type tag.
     ///
@@ -46,12 +54,35 @@ pub const Value = extern struct {
         _,
     };
 
-    pub const null_: Value = .{ .u = .{ .int32 = 0 }, .tag = .null };
-    pub const @"undefined": Value = .{ .u = .{ .int32 = 0 }, .tag = .undefined };
-    pub const @"false": Value = .{ .u = .{ .int32 = 0 }, .tag = .bool };
-    pub const @"true": Value = .{ .u = .{ .int32 = 1 }, .tag = .bool };
-    pub const exception: Value = .{ .u = .{ .int32 = 0 }, .tag = .exception };
-    pub const uninitialized: Value = .{ .u = .{ .int32 = 0 }, .tag = .uninitialized };
+    pub const @"null": Value = if (is_nan_boxed)
+        .{ .val = mkval(.null, 0) }
+    else
+        .{ .u = .{ .int32 = 0 }, .tag = .null };
+
+    pub const @"undefined": Value = if (is_nan_boxed)
+        .{ .val = mkval(.undefined, 0) }
+    else
+        .{ .u = .{ .int32 = 0 }, .tag = .undefined };
+
+    pub const @"false": Value = if (is_nan_boxed)
+        .{ .val = mkval(.bool, 0) }
+    else
+        .{ .u = .{ .int32 = 0 }, .tag = .bool };
+
+    pub const @"true": Value = if (is_nan_boxed)
+        .{ .val = mkval(.bool, 1) }
+    else
+        .{ .u = .{ .int32 = 1 }, .tag = .bool };
+
+    pub const exception: Value = if (is_nan_boxed)
+        .{ .val = mkval(.exception, 0) }
+    else
+        .{ .u = .{ .int32 = 0 }, .tag = .exception };
+
+    pub const uninitialized: Value = if (is_nan_boxed)
+        .{ .val = mkval(.uninitialized, 0) }
+    else
+        .{ .u = .{ .int32 = 0 }, .tag = .uninitialized };
 
     /// Initialize a Value from a Zig type.
     ///
@@ -77,11 +108,11 @@ pub const Value = extern struct {
         return switch (@TypeOf(val)) {
             Value => val,
             bool => initBool(val),
-            void => null_,
+            void => @"null",
 
             else => |T| switch (@typeInfo(T)) {
-                .null => null_,
-                .optional => if (val) |v| init(ctx, v) else null_,
+                .null => @"null",
+                .optional => if (val) |v| init(ctx, v) else @"null",
 
                 .int => |info| if (info.bits <= 32) switch (info.signedness) {
                     .signed => initInt32(@intCast(val)),
@@ -130,20 +161,20 @@ pub const Value = extern struct {
     ///
     /// C: `JS_NewBool`
     pub fn initBool(val: bool) Value {
-        return .{
-            .u = .{ .int32 = @intFromBool(val) },
-            .tag = .bool,
-        };
+        return if (is_nan_boxed)
+            .{ .val = mkval(.bool, @intFromBool(val)) }
+        else
+            .{ .u = .{ .int32 = @intFromBool(val) }, .tag = .bool };
     }
 
     /// Creates a JavaScript 32-bit integer value.
     ///
     /// C: `JS_NewInt32`
     pub fn initInt32(val: i32) Value {
-        return .{
-            .u = .{ .int32 = val },
-            .tag = .int,
-        };
+        return if (is_nan_boxed)
+            .{ .val = mkval(.int, val) }
+        else
+            .{ .u = .{ .int32 = val }, .tag = .int };
     }
 
     /// Creates a JavaScript 64-bit integer value.
@@ -152,11 +183,10 @@ pub const Value = extern struct {
     ///
     /// C: `JS_NewInt64`
     pub fn initInt64(val: i64) Value {
-        if (val >= std.math.minInt(i32) and val <= std.math.maxInt(i32)) {
-            return initInt32(@intCast(val));
-        } else {
-            return initFloat64(@floatFromInt(val));
-        }
+        return if (val >= std.math.minInt(i32) and val <= std.math.maxInt(i32))
+            initInt32(@intCast(val))
+        else
+            initFloat64(@floatFromInt(val));
     }
 
     /// Creates a JavaScript unsigned 32-bit integer value.
@@ -165,21 +195,20 @@ pub const Value = extern struct {
     ///
     /// C: `JS_NewUint32`
     pub fn initUint32(val: u32) Value {
-        if (val <= std.math.maxInt(i32)) {
-            return initInt32(@intCast(val));
-        } else {
-            return initFloat64(@floatFromInt(val));
-        }
+        return if (val <= std.math.maxInt(i32))
+            initInt32(@intCast(val))
+        else
+            initFloat64(@floatFromInt(val));
     }
 
     /// Creates a JavaScript floating-point number value.
     ///
     /// C: `JS_NewFloat64`
     pub fn initFloat64(val: f64) Value {
-        return .{
-            .u = .{ .float64 = val },
-            .tag = .float64,
-        };
+        return if (is_nan_boxed)
+            .{ .val = mkfloat64(val) }
+        else
+            .{ .u = .{ .float64 = val }, .tag = .float64 };
     }
 
     /// Creates a JavaScript number value from a double.
@@ -1680,6 +1709,44 @@ pub const Value = extern struct {
     pub inline fn cval(self: Value) c.JSValue {
         return @bitCast(self);
     }
+
+    // -----------------------------------------------------------------------
+    // NaN-boxing helpers (implementation details)
+    //
+    // On 32-bit platforms, QuickJS uses NaN-boxing to pack values into a u64:
+    // - Upper 32 bits: tag
+    // - Lower 32 bits: int32/bool value or pointer
+    // - Floats use a special encoding with JS_FLOAT64_TAG_ADDEND
+    //
+    // See quickjs.h under `#if defined(JS_NAN_BOXING)` for the C implementation.
+    // -----------------------------------------------------------------------
+
+    /// Constructs a nan-boxed value from a tag and 32-bit payload.
+    ///
+    /// C: `JS_MKVAL(tag, val)` macro in quickjs.h
+    fn mkval(t: Tag, val: i32) u64 {
+        const tag: u64 = @bitCast(@as(i64, @intFromEnum(t)));
+        return (tag << 32) | @as(u32, @bitCast(val));
+    }
+
+    /// Addend used for encoding floats in nan-boxed representation.
+    /// Floats are stored with their bits adjusted by this value to avoid
+    /// colliding with the tag space.
+    ///
+    /// C: `JS_FLOAT64_TAG_ADDEND` macro in quickjs.h
+    const float64_tag_addend: u64 = 0x7ff80000 -% @as(u64, @bitCast(@as(i64, c.JS_TAG_FIRST))) +% 1;
+
+    /// Constructs a nan-boxed float64 value, normalizing NaN to a canonical form.
+    ///
+    /// C: `__JS_NewFloat64(double d)` function in quickjs.h
+    fn mkfloat64(val: f64) u64 {
+        const u: u64 = @bitCast(val);
+        const nan_val = 0x7ff8000000000000 -% (float64_tag_addend << 32);
+        if ((u & 0x7fffffffffffffff) > 0x7ff0000000000000) {
+            return nan_val;
+        }
+        return u -% (float64_tag_addend << 32);
+    }
 };
 
 /// Promise state enumeration.
@@ -1854,8 +1921,8 @@ test "constants match JavaScript values" {
     const js_null = ctx.eval("null", "<test>", .{});
     defer js_null.deinit(ctx);
     try testing.expect(js_null.isNull());
-    try testing.expect(Value.null_.isNull());
-    try testing.expect(js_null.isStrictEqual(ctx, Value.null_));
+    try testing.expect(Value.@"null".isNull());
+    try testing.expect(js_null.isStrictEqual(ctx, Value.@"null"));
 
     // Test undefined
     const js_undefined = ctx.eval("undefined", "<test>", .{});
@@ -2510,8 +2577,12 @@ test "init with Value passthrough" {
     const original = Value.initInt32(42);
     const result = Value.init(ctx, original);
 
-    try testing.expectEqual(original.tag, result.tag);
-    try testing.expectEqual(original.u.int32, result.u.int32);
+    if (Value.is_nan_boxed) {
+        try testing.expectEqual(original.val, result.val);
+    } else {
+        try testing.expectEqual(original.tag, result.tag);
+        try testing.expectEqual(original.u.int32, result.u.int32);
+    }
 }
 
 test "init with bool" {

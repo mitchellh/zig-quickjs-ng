@@ -24,7 +24,11 @@ pub fn build(b: *std.Build) !void {
     });
 
     // Tests
-    const tests = b.addTest(.{ .root_module = mod });
+    const tests = b.addTest(.{
+        .root_module = mod,
+        // Compiler crash without this.
+        .use_llvm = true,
+    });
     tests.linkLibrary(lib);
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run unit tests");
