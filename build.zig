@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) !void {
         // Compiler crash without this.
         .use_llvm = true,
     });
-    tests.linkLibrary(lib);
+    tests.root_module.linkLibrary(lib);
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_tests.step);
@@ -61,15 +61,11 @@ pub fn library(
 
     const lib = b.addLibrary(.{
         .name = "quickjs-ng",
-        .root_module = b.createModule(.{
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_module = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true }),
         .linkage = .static,
     });
-    lib.linkLibC();
 
-    lib.addIncludePath(upstream.path(""));
+    lib.root_module.addIncludePath(upstream.path(""));
     lib.installHeader(
         upstream.path("quickjs.h"),
         "quickjs.h",
@@ -84,7 +80,7 @@ pub fn library(
         "-fno-sanitize-trap=undefined",
         "-fvisibility=hidden",
     });
-    lib.addCSourceFiles(.{
+    lib.root_module.addCSourceFiles(.{
         .root = upstream.path(""),
         .files = &.{
             "cutils.c",
