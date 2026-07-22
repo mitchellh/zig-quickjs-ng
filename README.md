@@ -47,19 +47,10 @@ compiler is still changing too much.
 
 ### Add Dependency
 
-Add this to your `build.zig.zon`:
+To add zig-quickjs-ng to your `build.zig.zon`:
 
-```zig
-.{
-    .name = "my-project",
-    .version = "0.0.0",
-    .dependencies = .{
-        .quickjs = .{
-            .url = "https://github.com/user/zig-quickjs-ng/archive/<git-ref-here>.tar.gz",
-            .hash = "...",
-        },
-    },
-}
+```sh
+zig fetch --save git+https://github.com/mitchellh/zig-quickjs-ng
 ```
 
 ### Configure build.zig
@@ -90,7 +81,7 @@ pub fn build(b: *std.Build) !void {
     exe.root_module.addImport("quickjs", dep.module("quickjs"));
 
     // Link the C library
-    exe.linkLibrary(dep.artifact("quickjs-ng"));
+    exe.root_module.linkLibrary(dep.artifact("quickjs-ng"));
 
     b.installArtifact(exe);
 }
