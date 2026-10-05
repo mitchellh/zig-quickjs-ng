@@ -2,7 +2,7 @@
     .name = .quickjs_ng,
     .version = "0.0.0",
     .fingerprint = 0xb2bca9fa0367c6d1,
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.17.0",
     .paths = .{
         "build.zig",
         "build.zig.zon",
@@ -13,6 +13,10 @@
         .quickjs = .{
             .url = "https://github.com/quickjs-ng/quickjs/archive/85640f81e04bc93940acc2756c792c66076dd768.tar.gz",
             .hash = "N-V-__8AAIZ_PAA7y10jIaLigzkK4qd5-jfKEoTOOfHCsIGM",
+        },
+        .translate_c = .{
+            .url = "git+https://codeberg.org/ziglang/translate-c?ref=zig-0.17.x#02ff0c523fb92a38939b04d0145c4a9602a74d56",
+            .hash = "translate_c-2.0.0-Q_BUWltOBwBYABF84EUL208pIFeUIwbBs29FmVBaafN5",
         },
     },
 }

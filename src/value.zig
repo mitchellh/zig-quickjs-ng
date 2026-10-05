@@ -269,7 +269,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_NewObjectClass`
     pub fn initObjectClass(ctx: *Context, class_id: class.Id) Value {
-        return fromCVal(c.JS_NewObjectClass(ctx.cval(), @intFromEnum(class_id)));
+        return fromCVal(c.JS_NewObjectClass(ctx.cval(), @backingInt(class_id)));
     }
 
     /// Creates an empty JavaScript array.
@@ -350,7 +350,7 @@ pub const Value = extern struct {
             cfunc.wrapFunc(func),
             name.ptr,
             length,
-            @intFromEnum(cproto),
+            @backingInt(cproto),
             magic,
         ));
     }
@@ -372,7 +372,7 @@ pub const Value = extern struct {
             cfunc.wrapFunc(func),
             name.ptr,
             length,
-            @intFromEnum(cproto),
+            @backingInt(cproto),
             magic,
             proto_val.cval(),
         ));
@@ -497,7 +497,7 @@ pub const Value = extern struct {
             ctx.cval(),
             @intCast(args.len),
             @ptrCast(@constCast(args.ptr)),
-            @intFromEnum(array_type),
+            @backingInt(array_type),
         ));
     }
 
@@ -854,7 +854,7 @@ pub const Value = extern struct {
     pub fn getTypedArrayType(self: Value) ?typed_array.Type {
         const result = c.JS_GetTypedArrayType(self.cval());
         if (result < 0) return null;
-        return @enumFromInt(@as(c_uint, @intCast(result)));
+        return @fromBackingInt(@intCast(@as(c_uint, @intCast(result))));
     }
 
     // -----------------------------------------------------------------------
@@ -1028,7 +1028,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_GetProperty`
     pub fn getProperty(self: Value, ctx: *Context, prop: Atom) Value {
-        return fromCVal(c.JS_GetProperty(ctx.cval(), self.cval(), @intFromEnum(prop)));
+        return fromCVal(c.JS_GetProperty(ctx.cval(), self.cval(), @backingInt(prop)));
     }
 
     /// Gets a property by string name.
@@ -1064,7 +1064,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_SetProperty`
     pub fn setProperty(self: Value, ctx: *Context, prop: Atom, val: Value) error{JSError}!void {
-        const ret = c.JS_SetProperty(ctx.cval(), self.cval(), @intFromEnum(prop), val.cval());
+        const ret = c.JS_SetProperty(ctx.cval(), self.cval(), @backingInt(prop), val.cval());
         if (ret < 0) return error.JSError;
     }
 
@@ -1249,7 +1249,7 @@ pub const Value = extern struct {
         const ret = c.JS_DefineProperty(
             ctx.cval(),
             self.cval(),
-            @intFromEnum(prop),
+            @backingInt(prop),
             val.cval(),
             getter.cval(),
             setter.cval(),
@@ -1274,7 +1274,7 @@ pub const Value = extern struct {
         const ret = c.JS_DefinePropertyValue(
             ctx.cval(),
             self.cval(),
-            @intFromEnum(prop),
+            @backingInt(prop),
             val.cval(),
             flags.toInt(),
         );
@@ -1344,7 +1344,7 @@ pub const Value = extern struct {
         const ret = c.JS_DefinePropertyGetSet(
             ctx.cval(),
             self.cval(),
-            @intFromEnum(prop),
+            @backingInt(prop),
             getter.cval(),
             setter.cval(),
             flags.toInt(),
@@ -1396,7 +1396,7 @@ pub const Value = extern struct {
         prop: Atom,
     ) error{JSError}!?PropertyDescriptor {
         var desc: PropertyDescriptor = undefined;
-        const ret = c.JS_GetOwnProperty(ctx.cval(), @ptrCast(&desc), self.cval(), @intFromEnum(prop));
+        const ret = c.JS_GetOwnProperty(ctx.cval(), @ptrCast(&desc), self.cval(), @backingInt(prop));
         if (ret < 0) return error.JSError;
         if (ret == 0) return null;
         return desc;
@@ -1507,7 +1507,7 @@ pub const Value = extern struct {
         return fromCVal(c.JS_Invoke(
             ctx.cval(),
             self.cval(),
-            @intFromEnum(method),
+            @backingInt(method),
             @intCast(args.len),
             @ptrCast(@constCast(args.ptr)),
         ));
@@ -1599,7 +1599,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_PromiseState`
     pub fn promiseState(self: Value, ctx: *Context) PromiseState {
-        return @enumFromInt(c.JS_PromiseState(ctx.cval(), self.cval()));
+        return @fromBackingInt(@intCast(c.JS_PromiseState(ctx.cval(), self.cval())));
     }
 
     /// Gets the result of a fulfilled or rejected promise.
@@ -1652,7 +1652,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_GetClassID`
     pub fn getClassId(self: Value) class.Id {
-        return @enumFromInt(c.JS_GetClassID(self.cval()));
+        return @fromBackingInt(@intCast(c.JS_GetClassID(self.cval())));
     }
 
     /// Sets opaque data on an object.
@@ -1670,7 +1670,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_GetOpaque`
     pub fn getOpaque(self: Value, comptime T: type, class_id: class.Id) ?*T {
-        return @ptrCast(@alignCast(c.JS_GetOpaque(self.cval(), @intFromEnum(class_id))));
+        return @ptrCast(@alignCast(c.JS_GetOpaque(self.cval(), @backingInt(class_id))));
     }
 
     /// Gets opaque data from an object with context validation.
@@ -1679,7 +1679,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_GetOpaque2`
     pub fn getOpaque2(self: Value, ctx: *Context, comptime T: type, class_id: class.Id) ?*T {
-        return @ptrCast(@alignCast(c.JS_GetOpaque2(ctx.cval(), self.cval(), @intFromEnum(class_id))));
+        return @ptrCast(@alignCast(c.JS_GetOpaque2(ctx.cval(), self.cval(), @backingInt(class_id))));
     }
 
     /// Gets opaque data from an object without knowing the class ID.
@@ -1692,7 +1692,7 @@ pub const Value = extern struct {
         const ptr = c.JS_GetAnyOpaque(self.cval(), &raw_class_id);
         return .{
             .ptr = @ptrCast(@alignCast(ptr)),
-            .class_id = @enumFromInt(raw_class_id),
+            .class_id = @fromBackingInt(@intCast(raw_class_id)),
         };
     }
 
@@ -1702,12 +1702,12 @@ pub const Value = extern struct {
 
     /// Initialize a Value from a C JSValue.
     pub inline fn fromCVal(val: c.JSValue) Value {
-        return @bitCast(val);
+        return @as(*const Value, @ptrCast(&val)).*;
     }
 
     /// Get the underlying C JSValue representation.
     pub inline fn cval(self: Value) c.JSValue {
-        return @bitCast(self);
+        return @as(*const c.JSValue, @ptrCast(&self)).*;
     }
 
     // -----------------------------------------------------------------------
@@ -1725,7 +1725,7 @@ pub const Value = extern struct {
     ///
     /// C: `JS_MKVAL(tag, val)` macro in quickjs.h
     fn mkval(t: Tag, val: i32) u64 {
-        const tag: u64 = @bitCast(@as(i64, @intFromEnum(t)));
+        const tag: u64 = @bitCast(@as(i64, @backingInt(t)));
         return (tag << 32) | @as(u32, @bitCast(val));
     }
 
@@ -1904,6 +1904,13 @@ pub const PropertyEnum = extern struct {
 comptime {
     assert(@sizeOf(Value) == @sizeOf(c.JSValue));
     assert(@alignOf(Value) == @alignOf(c.JSValue));
+    if (Value.is_nan_boxed) {
+        assert(c.JSValue == u64);
+        assert(@offsetOf(Value, "val") == 0);
+    } else {
+        assert(@offsetOf(Value, "u") == @offsetOf(c.JSValue, "u"));
+        assert(@offsetOf(Value, "tag") == @offsetOf(c.JSValue, "tag"));
+    }
     assert(@sizeOf(PropertyDescriptor) == @sizeOf(c.JSPropertyDescriptor));
     assert(@alignOf(PropertyDescriptor) == @alignOf(c.JSPropertyDescriptor));
     assert(@sizeOf(PropertyEnum) == @sizeOf(c.JSPropertyEnum));
@@ -1921,8 +1928,8 @@ test "constants match JavaScript values" {
     const js_null = ctx.eval("null", "<test>", .{});
     defer js_null.deinit(ctx);
     try testing.expect(js_null.isNull());
-    try testing.expect(Value.@"null".isNull());
-    try testing.expect(js_null.isStrictEqual(ctx, Value.@"null"));
+    try testing.expect(Value.null.isNull());
+    try testing.expect(js_null.isStrictEqual(ctx, Value.null));
 
     // Test undefined
     const js_undefined = ctx.eval("undefined", "<test>", .{});
@@ -3501,7 +3508,7 @@ test "initObjectClass" {
     defer ctx.deinit();
 
     // Class ID 1 is JS_CLASS_OBJECT - creates a plain object
-    const obj = Value.initObjectClass(ctx, @enumFromInt(1));
+    const obj = Value.initObjectClass(ctx, @fromBackingInt(@intCast(1)));
     defer obj.deinit(ctx);
 
     // Verify it's an object

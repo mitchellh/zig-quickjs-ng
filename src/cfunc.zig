@@ -49,7 +49,7 @@ pub fn wrapFunc(comptime func: Func) c.JSCFunction {
                 &.{};
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
+                Value.fromCVal(this_val),
                 args,
             }).cval();
         }
@@ -82,7 +82,7 @@ pub fn wrapFuncMagic(comptime func: FuncMagic) c.JSCFunctionMagic {
                 &.{};
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
+                Value.fromCVal(this_val),
                 args,
                 magic,
             }).cval();
@@ -121,7 +121,7 @@ pub fn wrapFuncData(comptime func: FuncData) c.JSCFunctionData {
                 &.{};
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
+                Value.fromCVal(this_val),
                 args,
                 magic,
                 data,
@@ -160,7 +160,7 @@ pub fn wrapClosure(comptime T: type, comptime func: Closure(T)) c.JSCClosure {
                 &.{};
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
+                Value.fromCVal(this_val),
                 args,
                 magic,
                 opaquepkg.fromC(T, opaque_ptr),
@@ -201,7 +201,7 @@ pub fn wrapGetter(comptime func: Getter) CGetterFn {
         ) callconv(.c) c.JSValue {
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
+                Value.fromCVal(this_val),
             }).cval();
         }
     }.callback;
@@ -224,8 +224,8 @@ pub fn wrapSetter(comptime func: Setter) CSetterFn {
         ) callconv(.c) c.JSValue {
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
-                @as(Value, @bitCast(val)),
+                Value.fromCVal(this_val),
+                Value.fromCVal(val),
             }).cval();
         }
     }.callback;
@@ -248,7 +248,7 @@ pub fn wrapGetterMagic(comptime func: GetterMagic) CGetterMagicFn {
         ) callconv(.c) c.JSValue {
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
+                Value.fromCVal(this_val),
                 magic,
             }).cval();
         }
@@ -273,8 +273,8 @@ pub fn wrapSetterMagic(comptime func: SetterMagic) CSetterMagicFn {
         ) callconv(.c) c.JSValue {
             return @call(.always_inline, func, .{
                 @as(?*Context, @ptrCast(ctx)),
-                @as(Value, @bitCast(this_val)),
-                @as(Value, @bitCast(val)),
+                Value.fromCVal(this_val),
+                Value.fromCVal(val),
                 magic,
             }).cval();
         }
@@ -331,10 +331,10 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(flags);
-        entry.def_type = @intFromEnum(DefType.cfunc);
+        entry.def_type = @backingInt(DefType.cfunc);
         entry.magic = 0;
         entry.u.func.length = length;
-        entry.u.func.cproto = @intFromEnum(Proto.generic);
+        entry.u.func.cproto = @backingInt(Proto.generic);
         entry.u.func.cfunc.generic = cfunc_ptr;
         return entry;
     }
@@ -349,10 +349,10 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(PropFlags.default);
-        entry.def_type = @intFromEnum(DefType.cfunc);
+        entry.def_type = @backingInt(DefType.cfunc);
         entry.magic = magic;
         entry.u.func.length = length;
-        entry.u.func.cproto = @intFromEnum(Proto.generic_magic);
+        entry.u.func.cproto = @backingInt(Proto.generic_magic);
         entry.u.func.cfunc.generic_magic = wrapFuncMagic(cfunc_ptr);
         return entry;
     }
@@ -366,7 +366,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = c.JS_PROP_CONFIGURABLE;
-        entry.def_type = @intFromEnum(DefType.cgetset);
+        entry.def_type = @backingInt(DefType.cgetset);
         entry.magic = 0;
         entry.u.getset.get.getter = if (getter_fn) |g| wrapGetter(g) else null;
         entry.u.getset.set.setter = if (setter_fn) |s| wrapSetter(s) else null;
@@ -383,7 +383,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = c.JS_PROP_CONFIGURABLE;
-        entry.def_type = @intFromEnum(DefType.cgetset_magic);
+        entry.def_type = @backingInt(DefType.cgetset_magic);
         entry.magic = magic;
         entry.u.getset.get.getter_magic = if (getter_fn) |g| wrapGetterMagic(g) else null;
         entry.u.getset.set.setter_magic = if (setter_fn) |s| wrapSetterMagic(s) else null;
@@ -399,7 +399,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(flags);
-        entry.def_type = @intFromEnum(DefType.prop_string);
+        entry.def_type = @backingInt(DefType.prop_string);
         entry.magic = 0;
         entry.u.str = value.ptr;
         return entry;
@@ -414,7 +414,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(flags);
-        entry.def_type = @intFromEnum(DefType.prop_int32);
+        entry.def_type = @backingInt(DefType.prop_int32);
         entry.magic = 0;
         entry.u.i32 = value;
         return entry;
@@ -429,7 +429,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(flags);
-        entry.def_type = @intFromEnum(DefType.prop_int64);
+        entry.def_type = @backingInt(DefType.prop_int64);
         entry.magic = 0;
         entry.u.i64 = value;
         return entry;
@@ -444,7 +444,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(flags);
-        entry.def_type = @intFromEnum(DefType.prop_double);
+        entry.def_type = @backingInt(DefType.prop_double);
         entry.magic = 0;
         entry.u.f64 = value;
         return entry;
@@ -458,7 +458,7 @@ pub const FunctionListEntryHelpers = struct {
         var entry: FunctionListEntry = std.mem.zeroes(FunctionListEntry);
         entry.name = name.ptr;
         entry.prop_flags = @bitCast(flags);
-        entry.def_type = @intFromEnum(DefType.prop_undefined);
+        entry.def_type = @backingInt(DefType.prop_undefined);
         entry.magic = 0;
         entry.u.i32 = 0;
         return entry;
@@ -466,32 +466,32 @@ pub const FunctionListEntryHelpers = struct {
 };
 
 test "Proto enum matches C constants" {
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_generic), @intFromEnum(Proto.generic));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_generic_magic), @intFromEnum(Proto.generic_magic));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor), @intFromEnum(Proto.constructor));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor_magic), @intFromEnum(Proto.constructor_magic));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor_or_func), @intFromEnum(Proto.constructor_or_func));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor_or_func_magic), @intFromEnum(Proto.constructor_or_func_magic));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_f_f), @intFromEnum(Proto.f_f));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_f_f_f), @intFromEnum(Proto.f_f_f));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_getter), @intFromEnum(Proto.getter));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_setter), @intFromEnum(Proto.setter));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_getter_magic), @intFromEnum(Proto.getter_magic));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_setter_magic), @intFromEnum(Proto.setter_magic));
-    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_iterator_next), @intFromEnum(Proto.iterator_next));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_generic), @backingInt(Proto.generic));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_generic_magic), @backingInt(Proto.generic_magic));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor), @backingInt(Proto.constructor));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor_magic), @backingInt(Proto.constructor_magic));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor_or_func), @backingInt(Proto.constructor_or_func));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_constructor_or_func_magic), @backingInt(Proto.constructor_or_func_magic));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_f_f), @backingInt(Proto.f_f));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_f_f_f), @backingInt(Proto.f_f_f));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_getter), @backingInt(Proto.getter));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_setter), @backingInt(Proto.setter));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_getter_magic), @backingInt(Proto.getter_magic));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_setter_magic), @backingInt(Proto.setter_magic));
+    try testing.expectEqual(@as(c_uint, c.JS_CFUNC_iterator_next), @backingInt(Proto.iterator_next));
 }
 
 test "DefType enum matches C constants" {
-    try testing.expectEqual(@as(u8, c.JS_DEF_CFUNC), @intFromEnum(DefType.cfunc));
-    try testing.expectEqual(@as(u8, c.JS_DEF_CGETSET), @intFromEnum(DefType.cgetset));
-    try testing.expectEqual(@as(u8, c.JS_DEF_CGETSET_MAGIC), @intFromEnum(DefType.cgetset_magic));
-    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_STRING), @intFromEnum(DefType.prop_string));
-    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_INT32), @intFromEnum(DefType.prop_int32));
-    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_INT64), @intFromEnum(DefType.prop_int64));
-    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_DOUBLE), @intFromEnum(DefType.prop_double));
-    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_UNDEFINED), @intFromEnum(DefType.prop_undefined));
-    try testing.expectEqual(@as(u8, c.JS_DEF_OBJECT), @intFromEnum(DefType.object));
-    try testing.expectEqual(@as(u8, c.JS_DEF_ALIAS), @intFromEnum(DefType.alias));
+    try testing.expectEqual(@as(u8, c.JS_DEF_CFUNC), @backingInt(DefType.cfunc));
+    try testing.expectEqual(@as(u8, c.JS_DEF_CGETSET), @backingInt(DefType.cgetset));
+    try testing.expectEqual(@as(u8, c.JS_DEF_CGETSET_MAGIC), @backingInt(DefType.cgetset_magic));
+    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_STRING), @backingInt(DefType.prop_string));
+    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_INT32), @backingInt(DefType.prop_int32));
+    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_INT64), @backingInt(DefType.prop_int64));
+    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_DOUBLE), @backingInt(DefType.prop_double));
+    try testing.expectEqual(@as(u8, c.JS_DEF_PROP_UNDEFINED), @backingInt(DefType.prop_undefined));
+    try testing.expectEqual(@as(u8, c.JS_DEF_OBJECT), @backingInt(DefType.object));
+    try testing.expectEqual(@as(u8, c.JS_DEF_ALIAS), @backingInt(DefType.alias));
 }
 
 test "PropFlags matches C constants" {

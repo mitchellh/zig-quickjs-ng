@@ -20,21 +20,21 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_NewAtom`
     pub fn init(ctx: *Context, str: [:0]const u8) Atom {
-        return @enumFromInt(c.JS_NewAtom(ctx.cval(), str.ptr));
+        return @fromBackingInt(@intCast(c.JS_NewAtom(ctx.cval(), str.ptr)));
     }
 
     /// Creates an atom from a string slice.
     ///
     /// C: `JS_NewAtomLen`
     pub fn initLen(ctx: *Context, str: []const u8) Atom {
-        return @enumFromInt(c.JS_NewAtomLen(ctx.cval(), str.ptr, str.len));
+        return @fromBackingInt(@intCast(c.JS_NewAtomLen(ctx.cval(), str.ptr, str.len)));
     }
 
     /// Creates an atom from an unsigned 32-bit integer.
     ///
     /// C: `JS_NewAtomUInt32`
     pub fn initUint32(ctx: *Context, n: u32) Atom {
-        return @enumFromInt(c.JS_NewAtomUInt32(ctx.cval(), n));
+        return @fromBackingInt(@intCast(c.JS_NewAtomUInt32(ctx.cval(), n)));
     }
 
     /// Creates an atom from a JavaScript value.
@@ -43,7 +43,7 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_ValueToAtom`
     pub fn fromValue(ctx: *Context, val: Value) Atom {
-        return @enumFromInt(c.JS_ValueToAtom(ctx.cval(), val.cval()));
+        return @fromBackingInt(@intCast(c.JS_ValueToAtom(ctx.cval(), val.cval())));
     }
 
     /// Duplicates the atom, incrementing its reference count.
@@ -52,7 +52,7 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_DupAtom`
     pub fn dup(self: Atom, ctx: *Context) Atom {
-        return @enumFromInt(c.JS_DupAtom(ctx.cval(), @intFromEnum(self)));
+        return @fromBackingInt(@intCast(c.JS_DupAtom(ctx.cval(), @backingInt(self))));
     }
 
     /// Duplicates the atom using the runtime, incrementing its reference count.
@@ -61,21 +61,21 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_DupAtomRT`
     pub fn dupRT(self: Atom, rt: *Runtime) Atom {
-        return @enumFromInt(c.JS_DupAtomRT(rt.cval(), @intFromEnum(self)));
+        return @fromBackingInt(@intCast(c.JS_DupAtomRT(rt.cval(), @backingInt(self))));
     }
 
     /// Frees the atom, decrementing its reference count.
     ///
     /// C: `JS_FreeAtom`
     pub fn deinit(self: Atom, ctx: *Context) void {
-        c.JS_FreeAtom(ctx.cval(), @intFromEnum(self));
+        c.JS_FreeAtom(ctx.cval(), @backingInt(self));
     }
 
     /// Frees the atom using the runtime, decrementing its reference count.
     ///
     /// C: `JS_FreeAtomRT`
     pub fn deinitRT(self: Atom, rt: *Runtime) void {
-        c.JS_FreeAtomRT(rt.cval(), @intFromEnum(self));
+        c.JS_FreeAtomRT(rt.cval(), @backingInt(self));
     }
 
     /// Converts the atom to a JavaScript value (symbol).
@@ -84,7 +84,7 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_AtomToValue`
     pub fn toValue(self: Atom, ctx: *Context) Value {
-        return Value.fromCVal(c.JS_AtomToValue(ctx.cval(), @intFromEnum(self)));
+        return Value.fromCVal(c.JS_AtomToValue(ctx.cval(), @backingInt(self)));
     }
 
     /// Converts the atom to a JavaScript string value.
@@ -93,7 +93,7 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_AtomToString`
     pub fn toString(self: Atom, ctx: *Context) Value {
-        return Value.fromCVal(c.JS_AtomToString(ctx.cval(), @intFromEnum(self)));
+        return Value.fromCVal(c.JS_AtomToString(ctx.cval(), @backingInt(self)));
     }
 
     /// Converts the atom to a C string.
@@ -103,7 +103,7 @@ pub const Atom = enum(u32) {
     ///
     /// C: `JS_AtomToCString`
     pub fn toCString(self: Atom, ctx: *Context) ?[*:0]const u8 {
-        const ptr = c.JS_AtomToCString(ctx.cval(), @intFromEnum(self));
+        const ptr = c.JS_AtomToCString(ctx.cval(), @backingInt(self));
         return @ptrCast(ptr);
     }
 
@@ -115,7 +115,7 @@ pub const Atom = enum(u32) {
     /// C: `JS_AtomToCStringLen`
     pub fn toCStringLen(self: Atom, ctx: *Context) ?struct { ptr: [*:0]const u8, len: usize } {
         var len: usize = 0;
-        const ptr = c.JS_AtomToCStringLen(ctx.cval(), &len, @intFromEnum(self));
+        const ptr = c.JS_AtomToCStringLen(ctx.cval(), &len, @backingInt(self));
         if (ptr == null) return null;
         return .{ .ptr = @ptrCast(ptr), .len = len };
     }
@@ -214,7 +214,7 @@ test "Atom dup" {
     const atom2 = atom1.dup(ctx);
     defer atom2.deinit(ctx);
 
-    try testing.expectEqual(@intFromEnum(atom1), @intFromEnum(atom2));
+    try testing.expectEqual(@backingInt(atom1), @backingInt(atom2));
 }
 
 test "Atom dupRT and deinitRT" {
@@ -230,7 +230,7 @@ test "Atom dupRT and deinitRT" {
     const atom2 = atom1.dupRT(rt);
     defer atom2.deinitRT(rt);
 
-    try testing.expectEqual(@intFromEnum(atom1), @intFromEnum(atom2));
+    try testing.expectEqual(@backingInt(atom1), @backingInt(atom2));
 }
 
 test "Atom toValue" {
@@ -374,5 +374,5 @@ test "Atom same strings share same atom" {
     const atom2 = Atom.init(ctx, "sharedString");
     defer atom2.deinit(ctx);
 
-    try testing.expectEqual(@intFromEnum(atom1), @intFromEnum(atom2));
+    try testing.expectEqual(@backingInt(atom1), @backingInt(atom2));
 }

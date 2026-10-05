@@ -73,24 +73,25 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{
-        .name = "my-app",
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
     // Get the quickjs dependency
     const dep = b.dependency("quickjs", .{
         .target = target,
         .optimize = optimize,
     });
 
-    // Add the Zig module
-    exe.root_module.addImport("quickjs", dep.module("quickjs"));
-
-    // Link the C library
-    exe.linkLibrary(dep.artifact("quickjs-ng"));
+    const exe = b.addExecutable(.{
+        .name = "my-app",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{.{
+                .name = "quickjs",
+                .module = dep.module("quickjs"),
+            }},
+        }),
+    });
+    exe.root_module.linkLibrary(dep.artifact("quickjs-ng"));
 
     b.installArtifact(exe);
 }

@@ -21,7 +21,7 @@
     overlays = [
       (final: prev: {
         zigpkgs = inputs.zig.packages.${prev.system};
-        zig = inputs.zig.packages.${prev.system}."0.15.2";
+        zig = inputs.zig.packages.${prev.system}."0.17.0";
       })
     ];
 

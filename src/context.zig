@@ -217,7 +217,7 @@ pub const Context = opaque {
     ///
     /// C: `JS_GetScriptOrModuleName`
     pub fn getScriptOrModuleName(self: *Context, n_stack_levels: i32) Atom {
-        return @enumFromInt(c.JS_GetScriptOrModuleName(self.cval(), n_stack_levels));
+        return @fromBackingInt(@intCast(c.JS_GetScriptOrModuleName(self.cval(), n_stack_levels)));
     }
 
     // =========================================================================
@@ -404,7 +404,7 @@ pub const Context = opaque {
     ///
     /// C: `JS_GetClassProto`
     pub fn getClassProto(self: *Context, class_id: class.Id) Value {
-        return Value.fromCVal(c.JS_GetClassProto(self.cval(), @intFromEnum(class_id)));
+        return Value.fromCVal(c.JS_GetClassProto(self.cval(), @backingInt(class_id)));
     }
 
     /// Sets the prototype for a class ID.
@@ -413,7 +413,7 @@ pub const Context = opaque {
     ///
     /// C: `JS_SetClassProto`
     pub fn setClassProto(self: *Context, class_id: class.Id, proto: Value) void {
-        c.JS_SetClassProto(self.cval(), @intFromEnum(class_id), proto.cval());
+        c.JS_SetClassProto(self.cval(), @backingInt(class_id), proto.cval());
     }
 
     /// Gets the Function prototype object.

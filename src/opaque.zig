@@ -18,5 +18,5 @@ pub fn toC(comptime T: type, value: Opaque(T)) ?*anyopaque {
 
 pub fn fromC(comptime T: type, ud: ?*anyopaque) Opaque(T) {
     if (T == void) return;
-    return @alignCast(@ptrCast(ud));
+    return @ptrCast(@alignCast(ud));
 }

@@ -78,7 +78,7 @@ pub const ModuleDef = opaque {
     ///
     /// C: `JS_GetModuleName`
     pub fn getName(self: *ModuleDef, ctx: *Context) Atom {
-        return @enumFromInt(c.JS_GetModuleName(ctx.cval(), @ptrCast(self)));
+        return @fromBackingInt(@intCast(c.JS_GetModuleName(ctx.cval(), @ptrCast(self))));
     }
 
     /// Gets the module namespace object.

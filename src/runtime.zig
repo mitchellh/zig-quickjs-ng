@@ -372,7 +372,7 @@ pub const Runtime = opaque {
     ///
     /// C: `JS_NewClass`
     pub fn newClass(self: *Runtime, class_id: class.Id, def: *const class.Def) !void {
-        const result = c.JS_NewClass(self.cval(), @intFromEnum(class_id), @ptrCast(def));
+        const result = c.JS_NewClass(self.cval(), @backingInt(class_id), @ptrCast(def));
         if (result < 0) return error.ClassRegistrationFailed;
     }
 
@@ -380,7 +380,7 @@ pub const Runtime = opaque {
     ///
     /// C: `JS_IsRegisteredClass`
     pub fn isRegisteredClass(self: *Runtime, class_id: class.Id) bool {
-        return c.JS_IsRegisteredClass(self.cval(), @intFromEnum(class_id));
+        return c.JS_IsRegisteredClass(self.cval(), @backingInt(class_id));
     }
 
     /// Gets the name of a registered class.
@@ -390,7 +390,7 @@ pub const Runtime = opaque {
     ///
     /// C: `JS_GetClassName`
     pub fn getClassName(self: *Runtime, class_id: class.Id) Atom {
-        return @enumFromInt(c.JS_GetClassName(self.cval(), @intFromEnum(class_id)));
+        return @fromBackingInt(@intCast(c.JS_GetClassName(self.cval(), @backingInt(class_id))));
     }
 
     // =========================================================================
@@ -524,9 +524,9 @@ pub const Runtime = opaque {
                 @call(.always_inline, h, .{
                     opaquepkg.fromC(T, inner_userdata),
                     @as(*Context, @ptrCast(ctx)),
-                    @as(PromiseHookType, @enumFromInt(hook_type)),
-                    @as(Value, @bitCast(promise)),
-                    @as(Value, @bitCast(parent_or_value)),
+                    @as(PromiseHookType, @fromBackingInt(@intCast(hook_type))),
+                    Value.fromCVal(promise),
+                    Value.fromCVal(parent_or_value),
                 });
             }
         };
@@ -574,8 +574,8 @@ pub const Runtime = opaque {
                 @call(.always_inline, t, .{
                     opaquepkg.fromC(T, inner_userdata),
                     @as(*Context, @ptrCast(ctx)),
-                    @as(Value, @bitCast(promise)),
-                    @as(Value, @bitCast(reason)),
+                    Value.fromCVal(promise),
+                    Value.fromCVal(reason),
                     is_handled,
                 });
             }
@@ -1092,8 +1092,8 @@ test "Runtime setHostPromiseRejectionTracker" {
 }
 
 test "PromiseHookType matches C constants" {
-    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_INIT), @intFromEnum(Runtime.PromiseHookType.init));
-    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_BEFORE), @intFromEnum(Runtime.PromiseHookType.before));
-    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_AFTER), @intFromEnum(Runtime.PromiseHookType.after));
-    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_RESOLVE), @intFromEnum(Runtime.PromiseHookType.resolve));
+    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_INIT), @backingInt(Runtime.PromiseHookType.init));
+    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_BEFORE), @backingInt(Runtime.PromiseHookType.before));
+    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_AFTER), @backingInt(Runtime.PromiseHookType.after));
+    try std.testing.expectEqual(@as(c_uint, c.JS_PROMISE_HOOK_RESOLVE), @backingInt(Runtime.PromiseHookType.resolve));
 }

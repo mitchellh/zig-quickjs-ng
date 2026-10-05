@@ -23,14 +23,12 @@ pub fn build(b: *std.Build) void {
         // Zig 0.15 crashes without this.
         .use_llvm = true,
     });
-    exe.linkLibrary(quickjs.artifact("quickjs-ng"));
+    exe.root_module.linkLibrary(quickjs.artifact("quickjs-ng"));
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.addPassthruArgs();
 
     const run_step = b.step("run", "Run the example");
     run_step.dependOn(&run_cmd.step);

@@ -24,7 +24,7 @@ pub const Id = enum(u32) {
     /// C: `JS_NewClassID`
     pub fn new(rt: *Runtime) Id {
         var raw: u32 = 0;
-        return @enumFromInt(c.JS_NewClassID(rt.cval(), &raw));
+        return @fromBackingInt(@intCast(c.JS_NewClassID(rt.cval(), &raw)));
     }
 };
 
@@ -128,7 +128,7 @@ pub const Def = extern struct {
 pub const call_flag_constructor: c_int = 1 << 0;
 
 comptime {
-    assert(@intFromEnum(Id.invalid) == c.JS_INVALID_CLASS_ID);
+    assert(@backingInt(Id.invalid) == c.JS_INVALID_CLASS_ID);
     assert(@sizeOf(Def) == @sizeOf(c.JSClassDef));
     assert(@alignOf(Def) == @alignOf(c.JSClassDef));
     assert(@sizeOf(ExoticMethods) == @sizeOf(c.JSClassExoticMethods));

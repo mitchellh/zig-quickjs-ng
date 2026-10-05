@@ -81,16 +81,16 @@ pub const SharedBufferFunctions = struct {
 };
 
 test "Type matches C constants" {
-    try testing.expectEqual(@as(c_uint, 0), @intFromEnum(Type.uint8_clamped));
-    try testing.expectEqual(@as(c_uint, 1), @intFromEnum(Type.int8));
-    try testing.expectEqual(@as(c_uint, 2), @intFromEnum(Type.uint8));
-    try testing.expectEqual(@as(c_uint, 3), @intFromEnum(Type.int16));
-    try testing.expectEqual(@as(c_uint, 4), @intFromEnum(Type.uint16));
-    try testing.expectEqual(@as(c_uint, 5), @intFromEnum(Type.int32));
-    try testing.expectEqual(@as(c_uint, 6), @intFromEnum(Type.uint32));
-    try testing.expectEqual(@as(c_uint, 7), @intFromEnum(Type.big_int64));
-    try testing.expectEqual(@as(c_uint, 8), @intFromEnum(Type.big_uint64));
-    try testing.expectEqual(@as(c_uint, 9), @intFromEnum(Type.float16));
-    try testing.expectEqual(@as(c_uint, 10), @intFromEnum(Type.float32));
-    try testing.expectEqual(@as(c_uint, 11), @intFromEnum(Type.float64));
+    try testing.expectEqual(@as(c_uint, 0), @backingInt(Type.uint8_clamped));
+    try testing.expectEqual(@as(c_uint, 1), @backingInt(Type.int8));
+    try testing.expectEqual(@as(c_uint, 2), @backingInt(Type.uint8));
+    try testing.expectEqual(@as(c_uint, 3), @backingInt(Type.int16));
+    try testing.expectEqual(@as(c_uint, 4), @backingInt(Type.uint16));
+    try testing.expectEqual(@as(c_uint, 5), @backingInt(Type.int32));
+    try testing.expectEqual(@as(c_uint, 6), @backingInt(Type.uint32));
+    try testing.expectEqual(@as(c_uint, 7), @backingInt(Type.big_int64));
+    try testing.expectEqual(@as(c_uint, 8), @backingInt(Type.big_uint64));
+    try testing.expectEqual(@as(c_uint, 9), @backingInt(Type.float16));
+    try testing.expectEqual(@as(c_uint, 10), @backingInt(Type.float32));
+    try testing.expectEqual(@as(c_uint, 11), @backingInt(Type.float64));
 }
